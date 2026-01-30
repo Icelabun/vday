@@ -1,13 +1,19 @@
 import React, { useEffect, useRef, useState } from 'react'
 
 // MusicToggle controls an <audio> element; if no audio file provided, uses WebAudio fallback
-export default function MusicToggle({ id }) {
+export default function MusicToggle({ id, src, afterDark = false }) {
   const audioRef = useRef(null)
   const [playing, setPlaying] = useState(false)
+  const [visible, setVisible] = useState(false)
   const ctxRef = useRef(null)
 
   useEffect(() => {
+    // Fade in music button after a delay (staggered animation)
+    const timer = setTimeout(() => {
+      setVisible(true)
+    }, 2000)
     return () => {
+      clearTimeout(timer)
       if (ctxRef.current) ctxRef.current.close()
     }
   }, [])
@@ -50,13 +56,18 @@ export default function MusicToggle({ id }) {
   }
 
   async function toggle() {
-    // Try HTML audio first (file can be placed in /public/music/celebrate.mp3)
     if (!playing) {
+      // set audio src dynamically
+      if (audioRef.current) {
+        audioRef.current.src = src || audioRef.current.src
+        audioRef.current.volume = 1.0 // Reset volume when starting
+      }
+
       if (audioRef.current && audioRef.current.src) {
         try {
           await audioRef.current.play()
         } catch (e) {
-          // user gesture required; proceed to fallback
+          // fallback to WebAudio if audio playback fails
           await startFallbackMusic()
         }
       } else {
@@ -74,11 +85,16 @@ export default function MusicToggle({ id }) {
   }
 
   return (
-    <div className="music-toggle">
-      <button onClick={toggle} className={`btn-music ${playing ? 'on' : 'off'}`}>
-        {playing ? 'Pause Music' : 'Play Music'}
-      </button>
-      <audio ref={audioRef} id={id} src="/music/celebrate.mp3" loop preload="none" />
+    <div className={`music-toggle ${visible ? 'visible' : ''}`}>
+      {visible && (
+        <>
+          <p className="music-cta">Press play. Trust me.</p>
+          <button onClick={toggle} className={`btn-music ${playing ? 'on' : 'off'}`}>
+            {playing ? 'Pause Music ⏸️' : 'Play Music 🎵'}
+          </button>
+        </>
+      )}
+      <audio ref={audioRef} id={id} src={src || '/music/celebrate.mp3'} loop preload="none" />
     </div>
   )
 }

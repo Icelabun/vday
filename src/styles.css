@@ -4,11 +4,15 @@
   --accent-2:#f2d4c6;
   --text:#472b2b;
   --soft:#ffdfe6;
+  --dark-bg:#0b0610;
+  --dark-accent:#6b0f1a;
+  --gold:#e6b56e;
 }
 *{box-sizing:border-box}
 body,html,#root{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui,Arial}
 
 .pre-reveal{min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;background:linear-gradient(180deg,var(--bg),#fff3f6)}
+.pre-reveal .content{transform:translate(var(--px,0), var(--py,0))}
 .pre-reveal .soft-bg{position:absolute;inset:0;background:radial-gradient(circle at 10% 20%, rgba(246,176,194,0.15), transparent 10%), radial-gradient(circle at 80% 80%, rgba(242,212,198,0.15), transparent 12%)}
 .pre-reveal .content{position:relative;padding:48px;text-align:center;max-width:880px}
 .pre-reveal h1{font-size:2.6rem;color:var(--text);margin:0 0 18px}
@@ -51,35 +55,100 @@ body,html,#root{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui,A
 .bear-arm.right{right:10px}
 @keyframes bearWave{0%{transform:rotate(0deg)}50%{transform:rotate(-18deg)}100%{transform:rotate(0deg)}}
 
+/* cat eyes blinking */
+.cat-eye{animation:blink 5s infinite}
+@keyframes blink{0%,94%{transform:scaleY(1)}96%{transform:scaleY(0.1)}100%{transform:scaleY(1)}}
+
 /* Reveal styles */
-.reveal{min-height:100vh;padding:36px;display:flex;flex-direction:column;align-items:center;background:linear-gradient(180deg,#fff7f8,#fffefc)}
+.reveal{min-height:100vh;padding:36px;display:flex;flex-direction:column;align-items:center;background:linear-gradient(180deg,#fff7f8,#fffefc);transition:background 1.5s ease}
 .celebrate{position:fixed;inset:0;pointer-events:none}
-.fireworks{position:absolute;left:50%;top:10%;width:200px;height:200px;background:radial-gradient(circle, rgba(255,200,230,0.4), transparent 40%);transform:translateX(-50%);animation:pop 1.2s ease-out 1}
-.confetti{position:absolute;inset:0;animation:confetti 1.5s ease-out 1}
+.fireworks{position:absolute;left:50%;top:6%;width:360px;height:360px;transform:translateX(-50%);pointer-events:none}
+.fireworks::before{content:'';position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 30% 30%, rgba(255,220,240,0.55), transparent 25%), radial-gradient(circle at 70% 70%, rgba(255,200,220,0.45), transparent 20%);filter:blur(22px);opacity:0.95;animation:pop 1.2s ease-out}
+.confetti{position:absolute;inset:0;pointer-events:none}
 @keyframes pop{0%{transform:scale(0)}70%{transform:scale(1.05)}100%{transform:scale(1)}}
 @keyframes confetti{0%{opacity:0}10%{opacity:1}100%{opacity:0}}
 
-.letter{max-width:760px;margin-top:86px;padding:14px}
-.type-line{opacity:0;transition:opacity .2s ease, transform .2s;transform:translateY(6px);color:var(--text);font-size:1.06rem}
-.type-line.visible{opacity:1;transform:none}
+/* Hero section with staggered animations */
+.hero{margin-top:40px;text-align:center;position:relative}
+.hero-title{font-size:2.4rem;color:var(--text);margin:6px 0 12px;position:relative;opacity:0;transform:translateY(20px);transition:opacity 1s ease, transform 1s ease;z-index:1}
+.hero-title.visible{opacity:1;transform:translateY(0)}
+.hero-sub{color:#6b3d47;font-size:1.1rem;opacity:0;transform:translateY(15px);transition:opacity 1s ease 0.3s, transform 1s ease 0.3s}
+.hero-sub.visible{opacity:1;transform:translateY(0)}
 
-.poems{margin-top:22px;text-align:center}
-.poem{background:#fff7f6;padding:12px;border-radius:12px;max-width:640px;margin:8px auto;color:#5a3b3b}
+/* Glowing heart pulse behind title */
+.heart-pulse{position:absolute;left:50%;top:0;transform:translateX(-50%);width:120px;height:120px;opacity:0.3;pointer-events:none;z-index:0;margin-top:20px}
+.heart-pulse::before{content:'❤️';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:80px;filter:blur(20px);animation:heartGlow 2s ease-in-out infinite}
+@keyframes heartGlow{0%,100%{opacity:0.2;transform:translate(-50%,-50%) scale(1)}50%{opacity:0.5;transform:translate(-50%,-50%) scale(1.2)}}
 
-.reasons{margin-top:22px;width:100%;text-align:center}
-.cards{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:12px}
-.card{background:linear-gradient(180deg,#fff,#fff1f4);padding:12px 18px;border-radius:12px;box-shadow:0 6px 18px rgba(200,120,140,0.08);transform:translateY(8px);opacity:0;animation:cardIn .45s forwards}
-@keyframes cardIn{to{transform:none;opacity:1}}
-.card:hover{transform:translateY(-6px) scale(1.02)}
+/* Music toggle with fade-in */
+.music-toggle{position:fixed;left:18px;bottom:18px;opacity:0;transform:translateY(10px);transition:opacity 1s ease, transform 1s ease;text-align:center}
+.music-toggle.visible{opacity:1;transform:translateY(0)}
+.music-cta{font-size:0.9rem;color:#6b3d47;margin-bottom:8px;font-style:italic}
+.btn-music{background:var(--accent);border:none;padding:10px 16px;border-radius:12px;color:#4b2b2b;font-weight:600;cursor:pointer;transition:transform 0.2s ease, box-shadow 0.2s ease}
+.btn-music:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(246,176,194,0.4)}
 
-.reveal-chars{position:fixed;right:18px;bottom:18px;display:flex;gap:10px}
+/* Poems section with scroll reveal */
+.poems{margin-top:60px;text-align:center;width:100%;max-width:800px}
+.poem{background:linear-gradient(180deg,#fff7f6,#fff9f7);padding:24px 32px;border-radius:16px;max-width:640px;margin:20px auto;color:#5a3b3b;font-size:1.1rem;line-height:1.8;opacity:0;transform:translateY(30px);transition:opacity 1s ease, transform 1s ease;box-shadow:0 4px 20px rgba(200,120,140,0.1)}
+.poem.visible{opacity:1;transform:translateY(0)}
+.poem:hover{transform:translateY(-4px);box-shadow:0 8px 30px rgba(200,120,140,0.2);transition:transform 0.3s ease, box-shadow 0.3s ease}
+
+/* Reasons section */
+.reasons{margin-top:60px;width:100%;text-align:center;max-width:1000px}
+.reasons h2{font-size:1.8rem;color:var(--text);margin-bottom:24px}
+.cards{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;margin-top:20px}
+.card{background:linear-gradient(180deg,#fff,#fff1f4);padding:16px 24px;border-radius:14px;box-shadow:0 6px 20px rgba(200,120,140,0.12);transform:translateY(20px) scale(0.95);opacity:0;animation:cardIn 0.6s ease forwards;color:#5a3b3b;font-size:1rem;line-height:1.6;transition:transform 0.3s ease, box-shadow 0.3s ease}
+@keyframes cardIn{to{transform:translateY(0) scale(1);opacity:1}}
+.card:hover{transform:translateY(-8px) scale(1.05);box-shadow:0 12px 30px rgba(200,120,140,0.25)}
+
+/* After Dark button */
+.after-dark-controls{margin-top:40px;margin-bottom:20px}
+.btn-after-dark{background:linear-gradient(180deg,var(--gold),#d4a05a);border:none;padding:12px 24px;border-radius:14px;color:#240a07;font-weight:600;font-size:1rem;cursor:pointer;transition:transform 0.3s ease, box-shadow 0.3s ease;box-shadow:0 4px 15px rgba(230,181,110,0.3)}
+.btn-after-dark:hover{transform:translateY(-3px);box-shadow:0 8px 25px rgba(230,181,110,0.5)}
+
+.reveal-chars{position:fixed;right:18px;bottom:18px;display:flex;gap:10px;opacity:0.6}
 .reveal-chars .cat.small{width:48px;height:40px;background:transparent}
 .reveal-chars .bear.small{width:54px;height:48px}
-
-.music-toggle{position:fixed;left:18px;bottom:18px}
-.btn-music{background:var(--accent);border:none;padding:8px 12px;border-radius:10px;color:#4b2b2b;font-weight:600}
 
 @media (max-width:720px){
   .pre-reveal h1{font-size:1.8rem}
   .countdown .block{padding:10px}
+  .hero-title{font-size:1.8rem}
+  .hero-sub{font-size:1rem}
+  .poem{font-size:1rem;padding:20px 24px}
+  .card{font-size:0.9rem;padding:14px 20px}
+  .reasons h2{font-size:1.5rem}
 }
+
+/* After Dark Theme */
+.after-dark{background:linear-gradient(180deg,var(--dark-bg),#12060b);color:#f6e7dc;position:relative;overflow:hidden}
+.after-dark::before{content:'';position:fixed;inset:0;background:radial-gradient(circle at 20% 30%, rgba(107,15,26,0.3), transparent 40%), radial-gradient(circle at 80% 70%, rgba(230,181,110,0.15), transparent 35%);animation:candleGlow 8s ease-in-out infinite;pointer-events:none}
+@keyframes candleGlow{0%,100%{opacity:0.6}50%{opacity:1}}
+
+.after-dark .hero-title{color:var(--gold);text-shadow:0 0 20px rgba(230,181,110,0.5)}
+.after-dark .hero-sub{color:#e7d3c2}
+.after-dark .btn-music{background:var(--gold);color:#240a07}
+.after-dark .music-cta{color:#e7d3c2}
+
+/* After Dark content */
+.after-dark-content{max-width:800px;margin:80px auto;padding:40px;text-align:center}
+.after-dark-audio-hint{font-size:1rem;color:var(--gold);font-style:italic;margin-bottom:30px;opacity:0.8;animation:fadeIn 1s ease}
+.after-dark-messages{min-height:200px;margin-bottom:40px}
+.after-dark-line{font-size:1.4rem;line-height:2;color:#e7d3c2;opacity:0;transform:translateY(20px);transition:opacity 0.8s ease, transform 0.8s ease;margin:20px 0;text-shadow:0 2px 10px rgba(0,0,0,0.5)}
+.after-dark-line.visible{opacity:1;transform:translateY(0)}
+
+.btn-continue{background:rgba(230,181,110,0.2);border:2px solid var(--gold);padding:14px 32px;border-radius:14px;color:var(--gold);font-weight:600;font-size:1.1rem;cursor:pointer;transition:all 0.3s ease;opacity:0;transform:translateY(10px);animation:fadeInButton 0.8s ease forwards}
+.btn-continue:hover{background:rgba(230,181,110,0.3);transform:translateY(-3px);box-shadow:0 8px 25px rgba(230,181,110,0.4)}
+@keyframes fadeInButton{to{opacity:1;transform:translateY(0)}}
+
+/* Final moment */
+.reveal.final-moment{background:linear-gradient(180deg,#050308,#000000)}
+.reveal.final-moment::before{opacity:0.3}
+.reveal.final-moment *{animation-duration:3s !important;animation-timing-function:ease-in-out !important}
+
+.final-center{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;color:var(--gold);font-size:2.8rem;pointer-events:none;opacity:0;transition:opacity 2s ease;text-shadow:0 0 30px rgba(230,181,110,0.8);font-weight:300;letter-spacing:2px}
+.final-center.visible{opacity:1}
+
+/* Slower animations in After Dark */
+.after-dark .card{animation-duration:1.2s}
+.after-dark .poem{transition-duration:1.5s}

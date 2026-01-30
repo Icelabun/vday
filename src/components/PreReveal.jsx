@@ -6,7 +6,7 @@ const TEASERS = [
   'Something special is coming… 💕',
   'Every second brings us closer ❤️',
   'I made this just for you 🥺',
-  'A little surprise — with all my heart 💌',
+  'Be patient… it\'s worth it 😌',
 ]
 
 export default function PreReveal({ targetDate, now }) {
@@ -20,7 +20,15 @@ export default function PreReveal({ targetDate, now }) {
   return (
     <main className="pre-reveal">
       <div className="soft-bg" />
-      <div className="content">
+      <div className="content" onMouseMove={(e)=>{
+        // subtle parallax on content
+        const el = e.currentTarget
+        const rect = el.getBoundingClientRect()
+        const x = (e.clientX - rect.left - rect.width/2)/rect.width
+        const y = (e.clientY - rect.top - rect.height/2)/rect.height
+        el.style.setProperty('--px', `${x*6}px`)
+        el.style.setProperty('--py', `${y*6}px`)
+      }}>
         <h1 className="fade-in">A Little Surprise</h1>
         <Countdown targetDate={targetDate} now={now} />
 

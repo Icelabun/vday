@@ -15,7 +15,24 @@ function nextFeb14() {
 export default function App() {
   const target = nextFeb14()
   const [now, setNow] = useState(new Date())
-  const [revealed, setRevealed] = useState(now >= target)
+  // Allow bypassing the countdown for development or preview using:
+  //  - URL query: ?forceReveal=1 or ?reveal
+  //  - localStorage key: `vday.forceReveal` = '1'
+  const forceFromQuery = typeof window !== 'undefined' && (new URLSearchParams(window.location.search).get('forceReveal') === '1' || window.location.search.includes('reveal'))
+  const forceFromStorage = typeof window !== 'undefined' && window.localStorage && window.localStorage.getItem('vday.forceReveal') === '1'
+  const [revealed, setRevealed] = useState(() => Boolean(forceFromQuery || forceFromStorage || now >= target))
+
+  // After Dark mode + music source management
+  const [afterDark, setAfterDark] = useState(false)
+  const musicSrc = afterDark ? '/music/afterdark.mp3' : '/music/celebrate.mp3'
+  function enterAfterDark() {
+    setAfterDark(true)
+    try { window.localStorage.setItem('vday.afterDark', '1') } catch(e){}
+  }
+  function exitAfterDark() {
+    setAfterDark(false)
+    try { window.localStorage.removeItem('vday.afterDark') } catch(e){}
+  }
 
   useEffect(() => {
     const t = setInterval(() => {
@@ -29,10 +46,11 @@ export default function App() {
   }, [revealed, target])
 
   return (
-    <div className={revealed ? 'reveal-mode' : 'pre-reveal-mode'}>
-      <MusicToggle id="main-music" />
+    <div className={revealed ? (afterDark ? 'reveal-mode after-dark' : 'reveal-mode') : 'pre-reveal-mode'}>
+      {revealed && <MusicToggle id="main-music" src={musicSrc} afterDark={afterDark} />}
+
       {revealed ? (
-        <Reveal targetDate={target} now={now} />
+        <Reveal targetDate={target} now={now} onEnterAfterDark={enterAfterDark} afterDark={afterDark} exitAfterDark={exitAfterDark} />
       ) : (
         <PreReveal targetDate={target} now={now} />
       )}
