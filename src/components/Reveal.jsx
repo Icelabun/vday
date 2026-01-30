@@ -1,30 +1,73 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState, useMemo } from 'react'
+
+// After Dark messages - CUSTOMIZE THESE (moved outside component to prevent re-creation)
+const AFTER_DARK_MESSAGES = [
+  "Some thoughts about you don't belong on a screen.",
+  "You have no idea what you do to me.",
+  "If I said everything I'm thinking… I'd have to stop typing."
+]
 
 // Typewriter helper for After Dark messages
-function useTypewriter(lines, speed = 40, gap = 700) {
-  const [textLines, setTextLines] = useState(lines.map(() => ''))
+function useTypewriter(lines, linesKey, speed = 40, gap = 700) {
+  const [textLines, setTextLines] = useState(() => lines.length > 0 ? lines.map(() => '') : [''])
   const idxRef = useRef(0)
+  const prevLinesKeyRef = useRef('')
+  const isTypingRef = useRef(false)
+  const linesRef = useRef(lines)
 
   useEffect(() => {
+    // Update lines ref
+    linesRef.current = lines
+    
+    // Only reset if the actual content changed
+    if (linesKey !== prevLinesKeyRef.current) {
+      prevLinesKeyRef.current = linesKey
+      idxRef.current = 0
+      isTypingRef.current = false
+      setTextLines(lines.length > 0 ? lines.map(() => '') : [''])
+    }
+    
+    if (lines.length === 0) {
+      return
+    }
+
+    // Don't restart if we're already typing the same content
+    if (isTypingRef.current) {
+      return
+    }
+
+    isTypingRef.current = true
     let letterTimer = null
     let pauseTimer = null
 
     function startLine() {
+      const currentLines = linesRef.current
       const lineIdx = idxRef.current
-      const target = lines[lineIdx]
+      if (lineIdx >= currentLines.length || !currentLines[lineIdx]) {
+        isTypingRef.current = false
+        return
+      }
+      const target = currentLines[lineIdx]
       let pos = 0
       letterTimer = setInterval(() => {
         pos++
         setTextLines((prev) => {
           const copy = [...prev]
-          copy[lineIdx] = target.slice(0, pos)
+          if (copy[lineIdx] !== undefined) {
+            copy[lineIdx] = target.slice(0, pos)
+          }
           return copy
         })
         if (pos >= target.length) {
           clearInterval(letterTimer)
           pauseTimer = setTimeout(() => {
             idxRef.current++
-            if (idxRef.current < lines.length) startLine()
+            const updatedLines = linesRef.current
+            if (idxRef.current < updatedLines.length) {
+              startLine()
+            } else {
+              isTypingRef.current = false
+            }
           }, gap)
         }
       }, speed)
@@ -34,8 +77,9 @@ function useTypewriter(lines, speed = 40, gap = 700) {
     return () => {
       clearInterval(letterTimer)
       clearTimeout(pauseTimer)
+      isTypingRef.current = false
     }
-  }, [lines, speed, gap])
+  }, [linesKey, speed, gap])
 
   return textLines
 }
@@ -57,16 +101,20 @@ export default function Reveal({ onEnterAfterDark, afterDark, exitAfterDark }) {
   const [showAfterDarkCTA, setShowAfterDarkCTA] = useState(false)
   const [showFinalMoment, setShowFinalMoment] = useState(false)
   
-  // After Dark messages - CUSTOMIZE THESE
-  const afterDarkMessages = [
-    "Some thoughts about you don't belong on a screen.",
-    "You have no idea what you do to me.",
-    "If I said everything I'm thinking… I'd have to stop typing."
-  ]
+  // Memoize the lines array to prevent infinite loops
+  const afterDarkLines = useMemo(() => {
+    if (afterDarkMessageIndex >= 0 && afterDarkMessageIndex < AFTER_DARK_MESSAGES.length) {
+      return [AFTER_DARK_MESSAGES[afterDarkMessageIndex]]
+    }
+    return []
+  }, [afterDarkMessageIndex])
   
-  const currentMessage = afterDarkMessageIndex >= 0 ? afterDarkMessages[afterDarkMessageIndex] : ''
+  // Create a stable key for the typewriter
+  const afterDarkLinesKey = useMemo(() => afterDarkLines.join('|'), [afterDarkLines])
+  
   const afterDarkTyped = useTypewriter(
-    currentMessage ? [currentMessage] : [],
+    afterDarkLines,
+    afterDarkLinesKey,
     afterDark ? 90 : 28,
     afterDark ? 1200 : 600
   )
@@ -146,16 +194,16 @@ export default function Reveal({ onEnterAfterDark, afterDark, exitAfterDark }) {
 
   // Show CTA after message finishes typing
   useEffect(() => {
-    if (afterDark && afterDarkMessageIndex >= 0 && afterDarkTyped[0] === afterDarkMessages[afterDarkMessageIndex]) {
+    if (afterDark && afterDarkMessageIndex >= 0 && afterDarkTyped[0] === AFTER_DARK_MESSAGES[afterDarkMessageIndex]) {
       const timer = setTimeout(() => {
         setShowAfterDarkCTA(true)
       }, 1000)
       return () => clearTimeout(timer)
     }
-  }, [afterDark, afterDarkMessageIndex, afterDarkTyped, afterDarkMessages])
+  }, [afterDark, afterDarkMessageIndex, afterDarkTyped])
 
   const handleAfterDarkContinue = () => {
-    if (afterDarkMessageIndex < afterDarkMessages.length - 1) {
+    if (afterDarkMessageIndex < AFTER_DARK_MESSAGES.length - 1) {
       setShowAfterDarkCTA(false)
       setTimeout(() => {
         setAfterDarkMessageIndex(afterDarkMessageIndex + 1)
@@ -238,7 +286,7 @@ export default function Reveal({ onEnterAfterDark, afterDark, exitAfterDark }) {
               className="btn-continue" 
               onClick={handleAfterDarkContinue}
             >
-              {afterDarkMessageIndex < afterDarkMessages.length - 1 
+              {afterDarkMessageIndex < AFTER_DARK_MESSAGES.length - 1 
                 ? "Don't stop…" 
                 : "Tell me more"}
             </button>
