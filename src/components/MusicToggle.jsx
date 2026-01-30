@@ -4,6 +4,8 @@ import React, { useEffect, useRef, useState } from 'react'
 export default function MusicToggle({ id, src, afterDark = false }) {
   const audioRef = useRef(null)
   const [playing, setPlaying] = useState(false)
+  const [playlist, setPlaylist] = useState([])
+  const [index, setIndex] = useState(0)
   const [visible, setVisible] = useState(false)
   const ctxRef = useRef(null)
 
@@ -57,9 +59,10 @@ export default function MusicToggle({ id, src, afterDark = false }) {
 
   async function toggle() {
     if (!playing) {
-      // set audio src dynamically
+      // choose source: playlist > src prop > default
+      const chosen = playlist.length ? playlist[index].url : (src || '/music/celebrate.mp3')
       if (audioRef.current) {
-        audioRef.current.src = src || audioRef.current.src
+        audioRef.current.src = chosen
         audioRef.current.volume = 1.0 // Reset volume when starting
       }
 
@@ -84,17 +87,82 @@ export default function MusicToggle({ id, src, afterDark = false }) {
     }
   }
 
+  // advance to next track
+  function nextTrack() {
+    if (!playlist.length) return
+    setIndex((s) => (s + 1) % playlist.length)
+  }
+  function prevTrack() {
+    if (!playlist.length) return
+    setIndex((s) => (s - 1 + playlist.length) % playlist.length)
+  }
+
+  // load playlist from /music/love/tracks.json or attempt directory listing
+  useEffect(() => {
+    let mounted = true
+    async function loadList() {
+      try {
+        const res = await fetch('/music/love/tracks.json')
+        if (res.ok) {
+          const names = await res.json()
+          if (Array.isArray(names) && mounted) {
+            setPlaylist(names.map((n) => ({ name: n, url: `/music/love/${n}` })))
+          }
+          return
+        }
+      } catch (e) {}
+
+      // attempt to fetch directory index (Vite dev server may return HTML)
+      try {
+        const r2 = await fetch('/music/love/')
+        if (r2.ok) {
+          const text = await r2.text()
+          const matches = Array.from(text.matchAll(/href=\"([^\"]+\.(mp3|ogg|wav))\"/gi)).map(m=>m[1])
+          if (matches.length && mounted) {
+            setPlaylist(matches.map((n) => ({ name: decodeURIComponent(n.split('/').pop()), url: `/music/love/${decodeURIComponent(n.split('/').pop())}` })))
+          }
+        }
+      } catch (e) {}
+    }
+    loadList()
+    return () => { mounted = false }
+  }, [])
+
+  // when index changes, auto-play the next track if currently playing
+  useEffect(() => {
+    if (!audioRef.current) return
+    if (playlist.length) {
+      audioRef.current.src = playlist[index].url
+      if (playing) audioRef.current.play().catch(()=>{})
+    }
+  }, [index, playlist])
+
   return (
     <div className={`music-toggle ${visible ? 'visible' : ''}`}>
       {visible && (
         <>
           <p className="music-cta">Press play. Trust me.</p>
-          <button onClick={toggle} className={`btn-music ${playing ? 'on' : 'off'}`}>
-            {playing ? 'Pause Music ⏸️' : 'Play Music 🎵'}
-          </button>
+          <div style={{display:'flex',gap:8,alignItems:'center'}}>
+            <button onClick={prevTrack} className="btn-music">◀</button>
+            <button onClick={toggle} className={`btn-music ${playing ? 'on' : 'off'}`}>
+              {playing ? 'Pause Music ⏸️' : 'Play Music 🎵'}
+            </button>
+            <button onClick={nextTrack} className="btn-music">▶</button>
+          </div>
+
+          {playlist.length > 0 && (
+            <div style={{marginTop:8,display:'flex',gap:8,alignItems:'center'}}>
+              <label style={{fontSize:12,color:'#5f3b3b'}}>Playlist</label>
+              <select value={index} onChange={(e)=>setIndex(Number(e.target.value))}>
+                {playlist.map((p,i) => (
+                  <option key={i} value={i}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
         </>
       )}
-      <audio ref={audioRef} id={id} src={src || '/music/celebrate.mp3'} loop preload="none" />
+      <audio ref={audioRef} id={id} src={src || '/music/celebrate.mp3'} preload="none" onEnded={() => { if (playlist.length) nextTrack(); }} />
     </div>
   )
 }
